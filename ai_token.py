@@ -1,5 +1,4 @@
 token = "" \
 "ZjY1OWMwYjgtNmE5ZS00YWEzLTkzNzUtMWE4ZWIxYTVjZDhkOjA2ZDUzM2U3LWFhZTktNDZiMi1hYzkzLTI1ZDg2M2U0ZDRmMg=="
 
-tuning = open("tuning_text3.txt", "r", encoding="utf-8").read()
 

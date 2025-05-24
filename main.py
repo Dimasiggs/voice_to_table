@@ -15,6 +15,8 @@ import pandas as pd
 from kivymd.app import MDApp
 from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
+import ai_token
+from text_to_command import *
 
 from kivy.core.window import Window
 
@@ -123,17 +125,23 @@ class MyApp(MDApp):
     def listen_info_task(self):
         stream = p.open(format=FRT,channels=CHAN,rate=RT,input=True,frames_per_buffer=CHUNK) # открываем поток для записи
         partial_parts = []
+        r = ""
         while True:
             if not self.is_recording:
+                print(r)
+                _access_token = get_access_token(ai_token.token)
+                print(parse_command(r, _access_token)["choices"][0]["message"]["content"])
                 break
             data = stream.read(CHUNK)
             if recognizer.AcceptWaveform(data):
                 result = json.loads(recognizer.Result())
+                r += " " + result["text"]
                 self.label.text = result["text"]
                 partial_parts = []
             else:
                 partial = json.loads(recognizer.PartialResult())
                 partial_parts.append(partial)
+
             # final_result = json.loads(recognizer.FinalResult())
             # results.append(final_result.get("text", ""))
             # print(results, flush=True)

@@ -1,5 +1,7 @@
 import requests
 
+tuning_text = open("tuning_text3.txt", "r", encoding="utf-8").read()
+
 def get_access_token(token):
     url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 
@@ -18,7 +20,7 @@ def get_access_token(token):
     return response.json()["access_token"]
 
 
-def chat_with_gigachat(prompt, access_token):
+def parse_command(prompt, access_token):
     chat_url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"  # Актуальный URL API
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -27,7 +29,7 @@ def chat_with_gigachat(prompt, access_token):
     }
     payload = {
         "model": "GigaChat",
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": f"{tuning_text}\n{prompt}"}],
         "temperature": 0.7
     }
     

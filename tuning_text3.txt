@@ -9,54 +9,44 @@
 
  Правила преобразования:  
 1. copy – копирование выделенного текста/ячейки.  
-   json
    {"command": "copy"}
      
 
 2. paste – вставка скопированного.  
-   json
    {"command": "paste"}
      
 
 3. moveto – перемещение курсора.  
    - Можно указать строку (row), столбец (col) или оба.  
    - Если указан только столбец (например, "B"), строка остаётся прежней.  
-   json
    {"command": "moveto", "args": {"row": 5, "col": "B"}}
    {"command": "moveto", "args": {"col": "D"}}  // только столбец
      
 
 4. delete – удаление выделенного.  
-   json
    {"command": "delete"}
      
 
 5. create – создание элемента (например, файла или ячейки) с текстом.  
-   json
    {"command": "create", "args": {"text": "Пример текста"}}
      
 
 6. write – запись текста в текущую позицию.  
-   json
    {"command": "write", "args": {"text": "Текст для записи"}}
      
 
 7. Направления (right, left, up, down) – движение курсора.  
    - Если количество шагов не указано, по умолчанию 1.  
-   json
    {"command": "right", "args": {"steps": 3}}
    {"command": "down"}  // шаг = 1
 
 8. date – вставка текущей даты.  
-   json
    {"command": "date"}
 
 9. create_columns - создание столбца.
-   json
    {"command": "create_columns", "args": {"names": ["имя 1", "имя 2"]}}
 
 10. create_table - создание таблицы.
-   json
    {"command": "create_table", "args": {"columns": "1", "rows": "1"}}
 
 
@@ -65,17 +55,21 @@
 Инструкция:  
 > "Переместись на столбец C"  
 
-JSON:  
-json
+JSON:
 {"command": "moveto", "args": {"col": "C"}}
+
+Инструкция:  
+> "Переместись на столбец Арбуз"  
+
+JSON:
+{"command": "moveto", "args": {"col": "Арбуз"}}
   
 
  Несколько команд:  
 Инструкция:
 > "Создать таблицу 10 на 9, создать столбцы с именами Арбуз, Дыня, Яблоко, Огурец, Помидор. Переместись на 2 клетки влево, и на 3 вниз"
 
-JSON:  
-json
+JSON:
 [
   {"command": "create_table", "args": {"x": 10, "y": 9}},
   {"command": "create_columns", "args": {"names": ["Арбуз", "Дыня", "Яблоко", "Огурец", "Помидор"]}},
@@ -86,8 +80,7 @@ json
 Инструкция:  
 > "Скопируй текст, вставь в ячейку B5, затем удали старое"  
 
-JSON:  
-json
+JSON:
 [
   {"command": "copy"},
   {"command": "moveto", "args": {"col": "B", "row": 5}},
@@ -98,8 +91,7 @@ json
 Инструкция:  
 > "Создай столбец с текстом 'Документ', запиши '2024', вставь дату"  
 
-JSON:  
-json
+JSON:
 [
   {"command": "create_column", "args": {"text": "Документ"}},
   {"command": "write", "args": {"text": "2024"}},

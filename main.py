@@ -3,6 +3,7 @@ import pyaudio
 import wave
 import kivy
 from kivy.app import App
+import openpyxl
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -15,6 +16,7 @@ import pandas as pd
 from kivymd.app import MDApp
 from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
+from kivy.uix.spinner import Spinner
 import ai_token
 from text_to_command import *
 
@@ -30,6 +32,9 @@ PLAY_ICON_PATH = 'static/play-icon.png'
 STOP_ICON_PATH = 'static/stop-icon.png'
 #MODEL_PATH = "vosk-model-ru-0.42"
 MODEL_PATH = "vosk-model-small-ru-0.22"
+
+EXPORT_XLS = "XLS"
+EXPORT_CSV = "CSV"
 
 table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
 
@@ -48,6 +53,7 @@ def get_data_table(dataframe):
 class MyApp(MDApp):
     def build(self):
         self.is_recording = False
+        self.current_export_format = None
         self.float_layout = FloatLayout()
         self.frames = []
 
@@ -56,7 +62,7 @@ class MyApp(MDApp):
         self.anchor_layout = AnchorLayout()
         self.anchor_layout.anchor_x = 'center'
         self.anchor_layout.anchor_y = 'bottom'
-        self.anchor_layout.size_hint_y = 0.3
+        self.anchor_layout.size_hint_y = 0.2
 
         self.button = Button()
         self.button.background_normal = PLAY_ICON_PATH
@@ -92,12 +98,39 @@ class MyApp(MDApp):
             row_data=row_data)
         self.table_view.size_hint_x = 1
 
+        self.anchor_layout_export = AnchorLayout()
+        self.anchor_layout_export.anchor_x = 'center'
+        self.anchor_layout_export.anchor_y = 'top'
+        self.anchor_layout_export.size_hint_y = 0.1
+        self.anchor_layout_export.padding = 20
+
+        self.box_layout_export = BoxLayout()
+
+        self.spinner = Spinner(
+            text='Формат экспорта',
+            values=(EXPORT_XLS, EXPORT_CSV),
+            size_hint=(None, None),
+            size=(200, 50)
+        )
+        self.spinner.bind(text=self.on_spinner_select)
+
+        self.export_button = Button(text='Экспорт')
+        self.export_button.size_hint = (None, None)
+        self.export_button.size = (200, 50)
+        self.export_button.disabled = True
+        self.export_button.on_press = self.export_btn_click
+
+        self.box_layout_export.add_widget(self.spinner)
+        self.box_layout_export.add_widget(self.export_button)
+
         self.anchor_layout.add_widget(self.button)
         self.anchor_layout_text.add_widget(self.label)
         self.anchor_layout_table.add_widget(self.table_view)
+        self.anchor_layout_export.add_widget(self.box_layout_export)
         self.box_layout.add_widget(self.anchor_layout)
         self.box_layout.add_widget(self.anchor_layout_text)
         self.box_layout.add_widget(self.anchor_layout_table)
+        self.box_layout.add_widget(self.anchor_layout_export)
         self.float_layout.add_widget(self.box_layout)
         return self.float_layout
 
@@ -148,6 +181,17 @@ class MyApp(MDApp):
             # for i in range(0, int(RT / CHUNK * REC_SEC)):
             #     data = stream.read(CHUNK)
             #     self.frames.append(data)
+
+    def on_spinner_select(self, spinner, text):
+        self.current_export_format = text
+        self.export_button.disabled = self.current_export_format is None
+
+    def export_btn_click(self):
+        if self.current_export_format == EXPORT_XLS:
+            file_path = 'output.xlsx'
+            table.to_excel(file_path, sheet_name='Sheet1', index=False)
+        if self.current_export_format == EXPORT_CSV:
+            table.to_csv('output.csv', index=False)
 
 
 

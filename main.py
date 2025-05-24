@@ -35,14 +35,9 @@ STOP_ICON_PATH = 'static/stop-icon.png'
 #MODEL_PATH = "vosk-model-ru-0.42"
 MODEL_PATH = "vosk-model-small-ru-0.22"
 
-<<<<<<< HEAD
-table_ = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
-=======
 EXPORT_XLS = "XLS"
 EXPORT_CSV = "CSV"
 
-table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
->>>>>>> 0201cf59333d09e4e17651c0cba822eb94ffb69a
 
 vosk_model = vosk.Model(model_path=MODEL_PATH)
 p = pyaudio.PyAudio()

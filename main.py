@@ -17,6 +17,7 @@ from kivymd.app import MDApp
 from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
 from kivy.uix.spinner import Spinner
+from kivy.uix.textinput import TextInput
 import ai_token
 from text_to_command import *
 
@@ -54,6 +55,7 @@ class MyApp(MDApp):
     def build(self):
         self.is_recording = False
         self.current_export_format = None
+        self.export_disabled = True
         self.float_layout = FloatLayout()
         self.frames = []
 
@@ -110,17 +112,31 @@ class MyApp(MDApp):
             text='Формат экспорта',
             values=(EXPORT_XLS, EXPORT_CSV),
             size_hint=(None, None),
-            size=(200, 50)
+            size=(200, 50),
+            font_size=20
         )
         self.spinner.bind(text=self.on_spinner_select)
+
+        self.export_file_input = TextInput(
+            hint_text='Название экспортного файла',
+            multiline=False,  # Однострочный режим
+            size_hint=(1, None),
+            height=50,
+            halign='center',
+            text='output',
+            font_size=20
+        )
+        self.export_file_input.bind(text=self.changed_export_file_text)
 
         self.export_button = Button(text='Экспорт')
         self.export_button.size_hint = (None, None)
         self.export_button.size = (200, 50)
-        self.export_button.disabled = True
+        self.export_button.disabled = self.export_disabled
+        self.export_button.font_size = 20
         self.export_button.on_press = self.export_btn_click
 
         self.box_layout_export.add_widget(self.spinner)
+        self.box_layout_export.add_widget(self.export_file_input)
         self.box_layout_export.add_widget(self.export_button)
 
         self.anchor_layout.add_widget(self.button)
@@ -184,16 +200,29 @@ class MyApp(MDApp):
 
     def on_spinner_select(self, spinner, text):
         self.current_export_format = text
-        self.export_button.disabled = self.current_export_format is None
+        self.export_button.disabled = self.is_export_button_disabled()
 
     def export_btn_click(self):
+        if self.is_export_button_disabled():
+            return
+
         if self.current_export_format == EXPORT_XLS:
-            file_path = 'output.xlsx'
+            file_path = f'{self.export_file_input.text}.xlsx'
             table.to_excel(file_path, sheet_name='Sheet1', index=False)
         if self.current_export_format == EXPORT_CSV:
-            table.to_csv('output.csv', index=False)
+            table.to_csv(f'{self.export_file_input.text}.csv', index=False)
 
+    def changed_export_file_text(self, window, text):
+        self.export_button.disabled = self.is_export_button_disabled()
 
+    def is_export_button_disabled(self):
+        return self.is_export_type_empty() or self.is_export_file_name_empty()
+
+    def is_export_file_name_empty(self):
+        return self.export_file_input.text == '' or self.export_file_input.text is None
+
+    def is_export_type_empty(self):
+        return self.current_export_format is None
 
 
 if __name__ == '__main__':

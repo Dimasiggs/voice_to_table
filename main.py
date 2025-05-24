@@ -240,9 +240,9 @@ class MyApp(MDApp):
 
         if self.current_export_format == EXPORT_XLS:
             file_path = f'{self.export_file_input.text}.xlsx'
-            table.to_excel(file_path, sheet_name='Sheet1', index=False)
+            self.table.to_excel(file_path, sheet_name='Sheet1', index=False)
         if self.current_export_format == EXPORT_CSV:
-            table.to_csv(f'{self.export_file_input.text}.csv', index=False)
+            self.table.to_csv(f'{self.export_file_input.text}.csv', index=False)
 
     def changed_export_file_text(self, window, text):
         self.export_button.disabled = self.is_export_button_disabled()

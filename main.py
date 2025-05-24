@@ -183,7 +183,6 @@ class MyApp(MDApp):
                 raw_commands = raw_commands.replace("```", "").replace("json", "")
                 commands = json.loads(raw_commands)
                 
-                print(commands)
                 if not type(commands) is list:
                     commands = [commands]
                 print(commands)
@@ -192,7 +191,7 @@ class MyApp(MDApp):
                 
                 table = run_commands(commands, self.table)
                 self.table = table
-                #table = self.t
+                
                 Clock.schedule_once(self.update_table_in_main_thread, 0)
                 r = ""
                 partial_parts = []
@@ -221,9 +220,9 @@ class MyApp(MDApp):
     def export_btn_click(self):
         if self.current_export_format == EXPORT_XLS:
             file_path = 'output.xlsx'
-            table.to_excel(file_path, sheet_name='Sheet1', index=False)
+            self.table.to_excel(file_path, sheet_name='Sheet1', index=False)
         if self.current_export_format == EXPORT_CSV:
-            table.to_csv('output.csv', index=False)
+            self.table.to_csv('output.csv', index=False)
 
 
 

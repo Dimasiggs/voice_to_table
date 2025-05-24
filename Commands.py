@@ -1,113 +1,103 @@
 import pandas as pd
 from datetime import datetime
 
-class Commands:
-    def __init__(self):
-        self.df = pd.DataFrame()
-        self.clipboard = None
-        self.cursor_position = (0, 0)  # (row, column)
+# Состояние курсора
+cursor = {
+    "row": 0,   # Начальная строка
+    "col": 0    # Начальный столбец
+}
 
-    def copy(self, args):
-        """Копирование данных из указанного диапазона"""
-        if isinstance(args, str):
-            # Копирование значения ячейки
-            row, col = self._parse_cell_reference(args)
-            self.clipboard = self.df.iat[row, col]
-        elif isinstance(args, dict):
-            # Копирование диапазона
-            start = args.get('start')
-            end = args.get('end')
-            self.clipboard = self.df.loc[start:end].copy()
-        return self.clipboard
+def _reset_cursor():
+    """Сброс позиции курсора"""
+    global cursor
+    cursor = {"row": 0, "col": 0}
 
-    def paste(self, args):
-        """Вставка данных в указанную позицию"""
-        if self.clipboard is None:
-            return
-        if isinstance(args, str):
-            # Вставка в конкретную ячейку
-            row, col = self._parse_cell_reference(args)
-            self.df.iat[row, col] = self.clipboard
-        elif isinstance(args, dict):
-            # Вставка диапазона
-            start = args.get('start')
-            self.df.loc[start:] = self.clipboard.values
+def _get_col_index(col_label: str) -> int:
+    """Преобразует буквенное обозначение столбца в индекс (например 'A' -> 0, 'B' -> 1 и т.д.)"""
+    if isinstance(col_label, int):
+        return col_label
+    col_label = col_label.upper()
+    result = 0
+    for char in col_label:
+        result = result * 26 + (ord(char) - ord('A') + 1)
+    return result - 1
 
-    def moveto(self, args):
-        """Перемещение курсора к указанной ячейке"""
-        self.cursor_position = self._parse_cell_reference(args)
-        return self.cursor_position
+def _normalize_col(col: str | int) -> int:
+    """Приводит столбец к числовому индексу"""
+    if isinstance(col, str):
+        return _get_col_index(col)
+    return col
 
-    def delete(self, args):
-        """Удаление данных"""
-        if args == 'all':
-            self.df = pd.DataFrame()
-        elif isinstance(args, str):
-            row, col = self._parse_cell_reference(args)
-            self.df.iat[row, col] = None
-        elif isinstance(args, list):
-            for cell in args:
-                row, col = self._parse_cell_reference(cell)
-                self.df.iat[row, col] = None
+# --- Команды ---
 
-    def create(self, args):
-        """Создание нового DataFrame"""
-        self.df = pd.DataFrame(args['data'])
-        return self.df
+def copy(table: pd.DataFrame, args):
+    """Копирует значение из текущей ячейки в буфер"""
+    global clipboard
+    clipboard = table.iat[cursor["row"], cursor["col"]]
 
-    def write(self, args):
-        """Запись значения в текущую позицию"""
-        row, col = self.cursor_position
-        self.df.iat[row, col] = args['value']
-        return self.df
+def paste(table: pd.DataFrame, args):
+    """Вставляет значение из буфера в текущую ячейку"""
+    global clipboard
+    table.iat[cursor["row"], cursor["col"]] = clipboard
 
-    def right(self, steps=1):
-        """Перемещение вправо"""
-        row, col = self.cursor_position
-        max_col = len(self.df.columns) - 1
-        self.cursor_position = (row, min(col + steps, max_col))
-        return self.cursor_position
+def moveto(table: pd.DataFrame, args):
+    """Перемещает курсор на указанную позицию"""
+    if "row" in args:
+        cursor["row"] = args["row"] - 1  # Индекс начинается с 0
+    if "col" in args:
+        cursor["col"] = _normalize_col(args["col"])
 
-    def left(self, steps=1):
-        """Перемещение влево"""
-        row, col = self.cursor_position
-        self.cursor_position = (row, max(col - steps, 0))
-        return self.cursor_position
+def delete(table: pd.DataFrame, args):
+    """Удаляет содержимое текущей ячейки"""
+    table.iat[cursor["row"], cursor["col"]] = ""
 
-    def up(self, steps=1):
-        """Перемещение вверх"""
-        row, col = self.cursor_position
-        self.cursor_position = (max(row - steps, 0), col)
-        return self.cursor_position
+def create(table: pd.DataFrame, args):
+    """Создаёт новую ячейку/строку/столбец с указанным текстом"""
+    text = args.get("text", "")
+    table.iat[cursor["row"], cursor["col"]] = text
 
-    def down(self, steps=1):
-        """Перемещение вниз"""
-        row, col = self.cursor_position
-        max_row = len(self.df.index) - 1
-        self.cursor_position = (min(row + steps, max_row), col)
-        return self.cursor_position
+def write(table: pd.DataFrame, args):
+    """Записывает текст в текущую ячейку"""
+    text = args.get("text", "")
+    table.iat[cursor["row"], cursor["col"]] = text
 
-    def date(self, args):
-        """Вставка текущей даты"""
-        row, col = self._parse_cell_reference(args['cell'])
-        self.df.iat[row, col] = datetime.now().strftime('%Y-%m-%d')
-        return self.df
+def right(table: pd.DataFrame, args):
+    """Перемещает курсор вправо на N шагов"""
+    steps = args.get("steps", 1)
+    cursor["col"] += steps
 
-    def create_columns(self, columns):
-        """Создание столбцов"""
-        for col in columns:
-            self.df[col] = None
-        return self.df
+def left(table: pd.DataFrame, args):
+    """Перемещает курсор влево на N шагов"""
+    steps = args.get("steps", 1)
+    cursor["col"] -= steps
 
-    def create_table(self, columns):
-        """Создание пустой таблицы с указанными столбцами"""
-        self.df = pd.DataFrame(columns=columns)
-        return self.df
+def up(table: pd.DataFrame, args):
+    """Перемещает курсор вверх на N шагов"""
+    steps = args.get("steps", 1)
+    cursor["row"] -= steps
 
-    def _parse_cell_reference(self, ref):
-        """Парсинг ссылки на ячейку в формате 'A1'"""
-        if isinstance(ref, tuple):
-            return ref
-        col = ord(ref[0].upper()) - ord('A')
-        row = int(ref[1:]) - 1
-        return (row, col)
+def down(table: pd.DataFrame, args):
+    """Перемещает курсор вниз на N шагов"""
+    steps = args.get("steps", 1)
+    cursor["row"] += steps
+
+def date(table: pd.DataFrame, args):
+    """Вставляет текущую дату в формате YYYY-MM-DD"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    table.iat[cursor["row"], cursor["col"]] = today
+
+def create_columns(table: pd.DataFrame, args):
+    """Создаёт новые столбцы с заданными названиями"""
+    names = args.get("names", [])
+    for name in names:
+        table[name] = ""
+
+def create_table(table: pd.DataFrame, args):
+    """Создаёт новую таблицу с заданным количеством строк и столбцов"""
+    cols = int(args.get("x"))
+    rows = int(args.get("y"))
+    new_table = pd.DataFrame("", index=range(rows), columns=range(cols))
+    return new_table
+
+# Глобальные переменные
+clipboard = None

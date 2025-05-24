@@ -1,5 +1,6 @@
 import time
 import pyaudio
+from kivy.clock import Clock
 import wave
 import kivy
 from kivy.app import App
@@ -18,6 +19,7 @@ from kivy.metrics import dp
 import ai_token
 from text_to_command import *
 
+from run_commands import run_commands
 from kivy.core.window import Window
 
 CHUNK = 4000 # определяет форму ауди сигнала
@@ -31,7 +33,7 @@ STOP_ICON_PATH = 'static/stop-icon.png'
 #MODEL_PATH = "vosk-model-ru-0.42"
 MODEL_PATH = "vosk-model-small-ru-0.22"
 
-table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
+table_ = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
 
 vosk_model = vosk.Model(model_path=MODEL_PATH)
 p = pyaudio.PyAudio()
@@ -41,8 +43,8 @@ Window.clearcolor = (0.9, 0.9, 0.9, 1)
 
 
 def get_data_table(dataframe):
-    column_data = list(dataframe.columns)
-    row_data = dataframe.to_records(index=False)
+    column_data = [str(col) for col in dataframe.columns]  # Принудительно превращаем в строки
+    row_data = dataframe.to_records(index=False).tolist()  # Преобразуем в список списков
     return column_data, row_data
 
 class MyApp(MDApp):
@@ -83,8 +85,11 @@ class MyApp(MDApp):
         self.anchor_layout_table.anchor_y = 'top'
         self.anchor_layout_table.size_hint_y = 0.6
         self.anchor_layout_table.padding = 15
-
-        column_data, row_data = get_data_table(table)
+        try:
+            self.table
+        except:
+            self.table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
+        column_data, row_data = get_data_table(self.table)
         column_data = [(x, dp(12)) for x in column_data]
 
         self.table_view = MDDataTable(
@@ -121,7 +126,18 @@ class MyApp(MDApp):
         if self.record_thread is not None:
             self.record_thread = None
 
+    def update_table_in_main_thread(self, dt):
+        column_data, row_data = get_data_table(self.table)
+        column_data = [(x, dp(12)) for x in column_data]
 
+        self.table_view = MDDataTable(
+            column_data=column_data,
+            row_data=row_data)
+        self.table_view.size_hint_x = 1
+
+        self.anchor_layout_table.clear_widgets()
+        self.anchor_layout_table.add_widget(self.table_view)
+        
     def listen_info_task(self):
         stream = p.open(format=FRT,channels=CHAN,rate=RT,input=True,frames_per_buffer=CHUNK) # открываем поток для записи
         partial_parts = []
@@ -130,7 +146,24 @@ class MyApp(MDApp):
             if not self.is_recording:
                 print(r)
                 _access_token = get_access_token(ai_token.token)
-                print(parse_command(r, _access_token)["choices"][0]["message"]["content"])
+                raw_commands = parse_command(r, _access_token)["choices"][0]["message"]["content"]
+                # print(raw_commands)
+                raw_commands = raw_commands.replace("```", "").replace("json", "")
+                commands = json.loads(raw_commands)
+                
+                print(commands)
+                if not type(commands) is list:
+                    commands = [commands]
+                print(commands)
+                
+                #commands = json.loads('[{"command": "create_table", "args": {"x": 10, "y": 15}}]')
+                
+                table = run_commands(commands, self.table)
+                self.table = table
+                #table = self.t
+                Clock.schedule_once(self.update_table_in_main_thread, 0)
+                r = ""
+                partial_parts = []
                 break
             data = stream.read(CHUNK)
             if recognizer.AcceptWaveform(data):
@@ -154,36 +187,3 @@ class MyApp(MDApp):
 
 if __name__ == '__main__':
     MyApp().run()
-
-# CHUNK = 1024 # определяет форму ауди сигнала
-# FRT = pyaudio.paInt16 # шестнадцатибитный формат задает значение амплитуды
-# CHAN = 1 # канал записи звука
-# RT = 44100 # частота
-# REC_SEC = 3 #длина записи
-#
-# p = pyaudio.PyAudio()
-# stream = p.open(format=FRT,channels=CHAN,rate=RT,input=True,frames_per_buffer=CHUNK) # открываем поток для записи
-# print("rec")
-# frames = []  # формируем выборку данных фреймов
-# while True:
-#     for i in range(0, int(RT / CHUNK * REC_SEC)):
-#         data = stream.read(CHUNK)
-#         frames.append(data)
-#
-#     print('stop')
-#     command = input()
-#     if command == 'q':
-#         break
-#
-# print("done")
-#
-# stream.stop_stream()  # останавливаем и закрываем поток
-# stream.close()
-# p.terminate()
-#
-# w = wave.open("output.wav", 'wb')
-# w.setnchannels(CHAN)
-# w.setsampwidth(p.get_sample_size(FRT))
-# w.setframerate(RT)
-# w.writeframes(b''.join(frames))
-# w.close()

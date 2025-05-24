@@ -1,10 +1,5 @@
-import time
 import pyaudio
 from kivy.clock import Clock
-import wave
-import kivy
-from kivy.app import App
-import openpyxl
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -123,7 +118,7 @@ class MyApp(MDApp):
 
         self.export_file_input = TextInput(
             hint_text='Название экспортного файла',
-            multiline=False,  # Однострочный режим
+            multiline=False,
             size_hint=(1, None),
             height=50,
             halign='center',
@@ -195,7 +190,6 @@ class MyApp(MDApp):
                 print(r)
                 _access_token = get_access_token(ai_token.token)
                 raw_commands = parse_command(r, _access_token)["choices"][0]["message"]["content"]
-                # print(raw_commands)
                 raw_commands = raw_commands.replace("```", "").replace("json", "")
                 commands = json.loads(raw_commands)
                 
@@ -208,7 +202,6 @@ class MyApp(MDApp):
                 
                 table = run_commands(commands, self.table)
                 self.table = table
-                #table = self.t
                 Clock.schedule_once(self.update_table_in_main_thread, 0)
                 r = ""
                 partial_parts = []
@@ -222,13 +215,6 @@ class MyApp(MDApp):
             else:
                 partial = json.loads(recognizer.PartialResult())
                 partial_parts.append(partial)
-
-            # final_result = json.loads(recognizer.FinalResult())
-            # results.append(final_result.get("text", ""))
-            # print(results, flush=True)
-            # for i in range(0, int(RT / CHUNK * REC_SEC)):
-            #     data = stream.read(CHUNK)
-            #     self.frames.append(data)
 
     def on_spinner_select(self, spinner, text):
         self.current_export_format = text

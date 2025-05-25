@@ -5,11 +5,15 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.dropdown import DropDown
 import threading
 import vosk
 import json
 import pandas as pd
 from kivymd.app import MDApp
+from kivymd.uix.card import MDCard
 from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
 from kivy.uix.spinner import Spinner
@@ -39,16 +43,15 @@ vosk_model = vosk.Model(model_path=MODEL_PATH)
 p = pyaudio.PyAudio()
 recognizer = vosk.KaldiRecognizer(vosk_model, RT)
 
-Window.clearcolor = (0.9, 0.9, 0.9, 1)
-
 
 def get_data_table(dataframe):
     column_data = [str(col) for col in dataframe.columns]  # Принудительно превращаем в строки
     row_data = dataframe.to_records(index=False).tolist()  # Преобразуем в список списков
     return column_data, row_data
 
-class MyApp(MDApp):
+class JarvisApp (MDApp):
     def build(self):
+        #Window.clearcolor = (0.4, 0.56, 0.68, 1)
         self.is_recording = False
         self.current_export_format = None
         self.export_disabled = True
@@ -74,11 +77,10 @@ class MyApp(MDApp):
         self.anchor_layout_text.anchor_y = 'top'
         self.anchor_layout_text.size_hint_y = 0.1
 
-        self.label = Label()
+        self.label = Label(bold=True)
         self.label.size_hint = (None, None)
         self.label.size = (200, 100)
         self.label.max_lines = 1
-        self.label.text = "Hello world"
         self.label.font_size = 28
         self.label.color = (0,0,0,1)
 
@@ -90,13 +92,14 @@ class MyApp(MDApp):
         try:
             self.table
         except:
-            self.table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['a', 'b', 'c', 'd', 'e'])
+            self.table = pd.DataFrame([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15],[1,2,3,4,'dsfsvsdvsdvdsv'], [6,7,8,9,10], [11,12,13,14,15],[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15],[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]], columns=['Марка стали', 'Размер', 'Тип изделия', 'Заказчик', 'Срок'])
         column_data, row_data = get_data_table(self.table)
-        column_data = [(x, dp(12)) for x in column_data]
+        column_data = [(x, dp(len(x) * 2 + 6)) for x in column_data]
 
         self.table_view = MDDataTable(
             column_data=column_data,
-            row_data=row_data)
+            row_data=row_data,
+            rows_num=1000)
         self.table_view.size_hint_x = 1
 
         self.anchor_layout_export = AnchorLayout()
@@ -114,10 +117,11 @@ class MyApp(MDApp):
             size=(200, 50),
             font_size=20
         )
+        self.spinner.background_color = (0.4, 0.56, 0.68, 1)
         self.spinner.bind(text=self.on_spinner_select)
 
         self.export_file_input = TextInput(
-            hint_text='Название экспортного файла',
+            hint_text='Название файла экспорта',
             multiline=False,
             size_hint=(1, None),
             height=50,
@@ -125,13 +129,15 @@ class MyApp(MDApp):
             text='output',
             font_size=20
         )
+        self.export_file_input.background_color = (0.95, 0.95, 0.95, 1)
         self.export_file_input.bind(text=self.changed_export_file_text)
 
         self.export_button = Button(text='Экспорт')
         self.export_button.size_hint = (None, None)
-        self.export_button.size = (200, 50)
+        self.export_button.size = (150, 50)
         self.export_button.disabled = self.export_disabled
         self.export_button.font_size = 20
+        self.export_button.background_color = (0.4, 0.56, 0.68, 1)
         self.export_button.on_press = self.export_btn_click
 
         self.box_layout_export.add_widget(self.spinner)
@@ -171,7 +177,7 @@ class MyApp(MDApp):
 
     def update_table_in_main_thread(self, dt):
         column_data, row_data = get_data_table(self.table)
-        column_data = [(x, dp(12)) for x in column_data]
+        column_data = [(x, dp(len(x) * 2 + 2)) for x in column_data]
 
         self.table_view = MDDataTable(
             column_data=column_data,
@@ -242,6 +248,5 @@ class MyApp(MDApp):
     def is_export_type_empty(self):
         return self.current_export_format is None
 
-
 if __name__ == '__main__':
-    MyApp().run()
+    JarvisApp().run()
